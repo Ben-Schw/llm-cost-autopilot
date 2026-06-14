@@ -1,0 +1,36 @@
+# Model registry override, loaded via ModelRegistry.from_yaml(...).
+# Costs are PER TOKEN (USD): $1/1M = 0.000001, $5/1M = 0.000005.
+# Anthropic standard rates, June 2026. Phase 2 also stores the tier->model
+# routing map as YAML so models can be swapped without code changes.
+models:
+  claude-haiku-4.5:
+    provider: anthropic
+    model_id: claude-haiku-4-5-20251001
+    cost_per_input_token: 0.000001
+    cost_per_output_token: 0.000005
+    avg_latency_ms: 900
+    quality_tier: low
+
+  claude-sonnet-4.6:
+    provider: anthropic
+    model_id: claude-sonnet-4-6
+    cost_per_input_token: 0.000003
+    cost_per_output_token: 0.000015
+    avg_latency_ms: 1400
+    quality_tier: medium
+
+  claude-opus-4.8:
+    provider: anthropic
+    model_id: claude-opus-4-8
+    cost_per_input_token: 0.000005
+    cost_per_output_token: 0.000025
+    avg_latency_ms: 2600
+    quality_tier: high
+
+  llama3.1-8b:
+    provider: ollama
+    model_id: llama3.1:8b
+    cost_per_input_token: 0.0
+    cost_per_output_token: 0.0
+    avg_latency_ms: 1200
+    quality_tier: lows
