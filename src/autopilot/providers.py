@@ -53,7 +53,7 @@ def _send_anthropic(prompt, cfg, max_tokens, temperature):
     if not api_key:
         raise ProviderError("Anthropic API key is not set.")
     client = anthropic.Anthropic(api_key=api_key)
-    msg = client.message.create(
+    msg = client.messages.create(
         model=cfg.model_id,
         max_tokens=max_tokens,
         temperature=temperature,

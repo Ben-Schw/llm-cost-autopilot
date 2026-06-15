@@ -33,4 +33,4 @@ models:
     cost_per_input_token: 0.0
     cost_per_output_token: 0.0
     avg_latency_ms: 1200
-    quality_tier: lows
+    quality_tier: low
