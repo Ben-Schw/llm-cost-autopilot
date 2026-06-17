@@ -1,0 +1,19 @@
+# Routing map: which model handles each complexity tier.
+# Stored as YAML so routing can change without touching code. The classifier
+# predicts a tier; the router looks the tier up here to pick the model.
+#
+# Rationale from the baseline run:
+#   - low    -> cheapest capable model. Llama (local, $0) if you run Ollama,
+#               otherwise Haiku. We default to Haiku so it works without a
+#               local server; swap to llama3.1-8b once Ollama is up.
+#   - medium -> Sonnet: best price-to-quality balance.
+#   - high   -> Opus: reserve the expensive model for genuine reasoning.
+routing:
+  low: claude-haiku-4.5
+  medium: claude-sonnet-4.6
+  high: claude-opus-4.8
+
+# Confidence floor: if the classifier is less sure than this about its top
+# tier, bump the request up one tier to be safe (cheaper to over-serve a few
+# requests than to fail quality on a misroute). Used by the router later.
+min_confidence: 0.55
