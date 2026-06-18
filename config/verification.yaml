@@ -1,0 +1,29 @@
+# Quality thresholds for the verification loop.
+# Stored as YAML so "good enough" can change without touching code.
+#
+# The verifier always re-runs the prompt on the highest-tier model (the
+# reference). HOW the two outputs are compared depends on task_type:
+#   extraction     -> field overlap: did the cheap model get the key fields?
+#   classification -> label match: does the cheap label equal the reference?
+#   summarization  -> LLM-as-judge: a 1-5 agreement score (needs an API call)
+#   default        -> token overlap fallback for anything else
+#
+# A request "passes" when its agreement score >= the threshold for its task.
+thresholds:
+  extraction: 0.80      # >=80% of reference fields present
+  classification: 1.0   # label must match exactly
+  summarization: 0.80   # judge score 4/5 -> 0.8 on a 0-1 scale
+  default: 0.70         # token-overlap fallback
+
+# The model the verifier treats as ground truth (highest quality tier).
+reference_model: claude-opus-4.8
+
+# LLM-as-judge prompt for summarization. {reference} and {candidate} are filled
+# at runtime. The judge returns a single integer 1-5.
+judge_prompt: |
+  You are grading whether two summaries convey the same key information.
+  Reference summary: "{reference}"
+  Candidate summary: "{candidate}"
+  Score how well the candidate matches the reference on a scale of 1 to 5,
+  where 5 means they convey the same key points and 1 means they diverge
+  completely. Reply with ONLY the integer.

@@ -1,0 +1,29 @@
+# Adaptive sampling policy for the verification loop.
+# Verifying every request costs more than just using the top model for
+# everything, so we verify only a SAMPLE. These knobs control how big that
+# sample is and how it adapts. Change them here without touching code.
+
+# Fraction of confident requests verified at random when failures are ~0.
+base_rate: 0.05          # 5% baseline
+
+# Hard floor and ceiling for the effective rate after adaptation.
+min_rate: 0.01           # never drop below 1% (keep a thin safety net)
+max_rate: 0.50           # never verify more than 50% (cost guardrail)
+
+# Requests whose classifier confidence is below this are ALWAYS verified,
+# regardless of the random sample — we spend budget where routing is shakiest.
+low_confidence_threshold: 0.55
+
+# How strongly the observed failure rate raises the effective rate.
+# effective = clamp(base_rate + failure_rate * failure_sensitivity).
+# At sensitivity 2.0, a 10% observed failure rate adds 0.20 to the rate.
+failure_sensitivity: 2.0
+
+# Rolling window (number of recent verifications) used to estimate the
+# failure rate that drives adaptation.
+window: 200
+
+# Seed for the random draw. Set to an integer for reproducible sampling
+# (tests, demos where you want the same requests picked twice). Set to null
+# for true randomness in production.
+seed: 42
