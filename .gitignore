@@ -9,3 +9,4 @@ data/*.json
 .DS_Store
 models/
 data/*.txt
+data/*.jsonl
