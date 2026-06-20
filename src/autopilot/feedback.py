@@ -79,7 +79,7 @@ def retrain_with_feedback(seed: int = 42, failure_path: Path = FAILURE_LOG) -> d
     from sklearn.model_selection import train_test_split
 
     base = generate_dataset(seed=seed)
-    failures = laod_failures(failure_path)
+    failures = load_failures(failure_path)
     combined = base + [{"prompt": f["prompt"], "tier": f["tier"]} for f in failures]
 
     X = [features_to_vector(r["prompt"]) for r in combined]
