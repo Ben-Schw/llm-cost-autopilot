@@ -69,7 +69,8 @@ class Router:
     _LOW_PROVIDER_MODELS = {"ollama": "llama3.1-8b", "haiku": "claude-haiku-4.5"}
 
     def handle(self, prompt: str, task_type: str = "default",
-               low_provider: str | None = None) -> RoutedResponse:
+               low_provider: str | None = None,
+               max_tokens: int = 1024) -> RoutedResponse:
         """Classify, route to the cheap model, return immediately. Also decides
         (but does not run) whether this request will be verified.
 
@@ -90,7 +91,7 @@ class Router:
 
         cfg = self._registry.get(model_name)
 
-        resp = self._send(prompt, cfg, max_tokens=512)
+        resp = self._send(prompt, cfg, max_tokens=max_tokens)
         decision = self._sampler.should_verify(confidence=confidence)
 
         return RoutedResponse(
@@ -98,6 +99,8 @@ class Router:
             chosen_model=model_name, output=resp.text, cost_usd=resp.cost_usd,
             will_verify=decision.verify, verify_reason=decision.reason,
             task_type=task_type,
+            extra={"input_tokens": resp.input_tokens,
+                   "output_tokens": resp.output_tokens},
         )
     
     # Background path

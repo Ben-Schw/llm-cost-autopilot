@@ -12,9 +12,13 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 import yaml
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 
 from .analytics import CostAnalytics
 from .api_models import (CompletionRequest, CompletionResponse, ModelInfo,
@@ -53,21 +57,31 @@ def _startup() -> None:
     state.reference_model = vcfg["reference_model"]
 
 
-def _log_unverified(routed) -> None:
-    """Log a request that was NOT sampled for verification."""
+def _reference_baseline(routed) -> float:
+    """What the top model woul have cost for this request, using the cheap
+    call's real token counts (not a flat guess). Makes the savings figure an
+    apples-to-apples comparison: same tokens, priced at the top model."""
     ref_cfg = state.registry.get(state.reference_model)
-    reference_cost = ref_cfg.estimate_cost(300, 200)
+    in_tok = routed.extra.get("input_tokens", 300)
+    out_tok = routed.extra.get("output_tokens", 200)
+    return ref_cfg.estimate_cost(in_tok, out_tok)
+
+
+def _log_unverified(routed) -> None:
+    """Log a request that was not sampled for verification."""
     state.logger.log_routed_response(
-        routed, reference_cost_usd=reference_cost,
+        routed, reference_cost_usd=_reference_baseline(routed),
         latency_ms=routed.extra.get("latency_ms", 0.0),
-    )   
+    )  
 
 @app.post("/v1/completions", response_model=CompletionResponse)
 def completions(req: CompletionRequest, background: BackgroundTasks):
     start = time.perf_counter()
 
     try:
-        routed = state.router.handle(req.prompt, task_type=req.task_type, low_provider=req.low_provider)
+        routed = state.router.handle(req.prompt, task_type=req.task_type,
+                                     low_provider=req.low_provider,
+                                     max_tokens=req.max_tokens)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:         # provider failure, etc.
@@ -75,16 +89,16 @@ def completions(req: CompletionRequest, background: BackgroundTasks):
     routed.extra["latency_ms"] = (time.perf_counter() - start) * 1000.0
 
     if routed.will_verify:
-        # Hand off to the worker process via the DB queue.
-        ref_cfg = state.registry.get(state.reference_model)
+        # Hand off to the worker process via the DB queue. The API does not verify in-process. That's the worker's job.
         state.queue.enqueue(VerifyJob(
             prompt=routed.prompt, chosen_model=routed.chosen_model,
             output=routed.output, task_type=routed.task_type, tier=routed.tier,
             cost_usd=routed.cost_usd,
-            reference_cost_usd=ref_cfg.estimate_cost(300, 200),
+            reference_cost_usd=_reference_baseline(routed),
             confidence=routed.confidence,
         ))
     else:
+        # Not sampled: log immediately in a background task so we don't block.
         background.add_task(_log_unverified, routed)
 
     return CompletionResponse(
@@ -145,6 +159,10 @@ def update_routing(update: RoutingConfigUpdate):
     return {"status": "updated", "routing": new_map}
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"service": "LLM Cost Autopilot", "docs": "/docs"}
+    """Serve the single-page frontend (playground + dashboard)."""
+    html = (Path(__file__).resolve().parent / "static" / "index.html").read_text(
+        encoding="utf-8"
+    )
+    return HTMLResponse(html)
