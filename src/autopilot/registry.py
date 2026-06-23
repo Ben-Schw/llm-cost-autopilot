@@ -79,16 +79,3 @@ class ModelRegistry:
     
     def all(self) -> list[ModelConfig]:
         return list(self._models.values())
-    
-    def by_tier(self, tier: QualityTier) -> list[ModelConfig]:
-        """
-        Returns all models in a tier, sorted by the cheapest price.
-        """
-        members = [m for m in self._models.values() if m.quality_tier == tier]
-        return sorted(members, key=lambda m: m.estimate_cost(1000, 1000))
-    
-    def cheapest_in_tier(self, tier: QualityTier) -> ModelConfig:
-        members = self.by_tier(tier)
-        if not members:
-            raise ValueError(f"No models registered for tier {tier}")
-        return members[0]

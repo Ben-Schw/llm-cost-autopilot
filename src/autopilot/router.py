@@ -34,7 +34,7 @@ class RoutedResponse:
 
     prompt: str
     tier: str
-    confidence: str
+    confidence: float
     chosen_model: str
     output: str
     cost_usd: float
@@ -66,11 +66,28 @@ class Router:
         self._routing_map: dict = cfg["routing"]
 
     # Fast path
-    def handle(self, prompt: str, task_type: str = "default") -> RoutedResponse:
+    _LOW_PROVIDER_MODELS = {"ollama": "llama3.1-8b", "haiku": "claude-haiku-4.5"}
+
+    def handle(self, prompt: str, task_type: str = "default",
+               low_provider: str | None = None) -> RoutedResponse:
         """Classify, route to the cheap model, return immediately. Also decides
-        (but does not run) whether this request will be verified."""
+        (but does not run) whether this request will be verified.
+
+        `low_provider` ('ollama' | 'haiku') overrides the model only when the
+        request routes to the low tier; medium/high routing is untouched.
+        """
         tier, confidence = self._classifier.predict_with_confidence(prompt)
         model_name = self._routing_map[tier]
+
+        if tier == "low" and low_provider is not None:
+            override = self._LOW_PROVIDER_MODELS.get(low_provider)
+            if override is None:
+                raise ValueError(
+                    f"Unknown low_provider '{low_provider}'. "
+                    f"Use one of {list(self._LOW_PROVIDER_MODELS)}."
+                )
+            model_name = override
+
         cfg = self._registry.get(model_name)
 
         resp = self._send(prompt, cfg, max_tokens=512)
@@ -79,7 +96,8 @@ class Router:
         return RoutedResponse(
             prompt=prompt, tier=tier, confidence=confidence,
             chosen_model=model_name, output=resp.text, cost_usd=resp.cost_usd,
-            will_verify=decision.verify, verify_reason=decision.reason, task_type=task_type          
+            will_verify=decision.verify, verify_reason=decision.reason,
+            task_type=task_type,
         )
     
     # Background path

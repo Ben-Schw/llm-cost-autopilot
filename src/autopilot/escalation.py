@@ -61,7 +61,7 @@ class Escalator:
             resp = self._send(result.prompt, cfg, max_tokens=512)
             escalated_model = target_model_name
             escalated_output = resp.text
-            escalated_output = resp.cost_usd
+            escalated_cost = resp.cost_usd
 
         return EscalationEvent(
             timestamp=datetime.now(timezone.utc).isoformat(),

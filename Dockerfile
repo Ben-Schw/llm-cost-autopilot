@@ -13,4 +13,6 @@ COPY tests/ ./tests/
 ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "-m", "scripts.run_baseline", "--skip-ollama"]
+RUN python -m autopilot.classifier
+
+CMD ["uvicorn", "autopilot.api:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src"]

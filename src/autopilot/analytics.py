@@ -75,18 +75,6 @@ class CostAnalytics:
             avg_quality_score=avg_quality,
         )
 
-    def cost_by_day(self) -> dict[str, dict]:
-        """Per-day actual vs. baseline cost, for the trend chart."""
-        rows = self._logger.all_rows()
-        by_day: dict[str, dict] = {}
-        for r in rows:
-            day = r["timestamp"][:10]   # YYYY-MM-DD
-            d = by_day.setdefault(day, {"actual": 0.0, "baseline": 0.0, "n": 0})
-            d["actual"] += r["cost_usd"] + r["escalation_cost_usd"]
-            d["baseline"] += r["reference_cost_usd"]
-            d["n"] += 1
-        return by_day
-
 
 def _bucket_scores(scores: list[float]) -> dict[str, int]:
     """Group quality scores into readable buckets for the distribution chart."""

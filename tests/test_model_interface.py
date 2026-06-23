@@ -32,15 +32,6 @@ def test_registry_has_expected_models():
     names = {m.name for m in ModelRegistry.default().all()}
     assert {"claude-haiku-4.5", "claude-sonnet-4.6",
             "claude-opus-4.8", "llama3.1-8b"} <= names
-    
-def test_find_cheapest_model_tier_low():
-    cheapest = ModelRegistry.default().cheapest_in_tier(QualityTier.LOW)
-    assert cheapest.name == "llama3.1-8b"
-
-def test_by_tier_sorted_cheapest_first():
-    low = ModelRegistry.default().by_tier(QualityTier.LOW)
-    costs = [m.estimate_cost(1000, 1000) for m in low]
-    assert costs == sorted(costs)
 
 def test_yaml_registry_matches_code():
     cfg_path = Path(__file__).resolve().parents[1] / "config" / "models.yaml"

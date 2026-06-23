@@ -79,8 +79,6 @@ def score_summarization(
 
 # Dispatch by task type
 
-TASK_TYPES = ("extraction", "classification", "summarization", "default")
-
 def score_agreement(
         candidate: str,
         reference: str,

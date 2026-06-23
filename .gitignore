@@ -11,3 +11,5 @@ models/
 data/*.txt
 data/*.jsonl
 data/*.db
+data/*.db-wal
+data/*.db-shm
